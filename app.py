@@ -5,14 +5,26 @@ from datetime import date
 from tkcalendar import Calendar
 import tkinter
 import cv2
-import PIL.Image, PIL.ImageTk
+import dlib
+import math
+from PIL import Image, ImageTk
 import time
- 
-
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-
 from pandas import DataFrame
+BLINK_RATIO_THRESHOLD = 5.7
+
+#-----Step 3: Face detection with dlib-----
+detector = dlib.get_frontal_face_detector()
+counter = 0
+key = 0
+bg_img = Image.open("./eye.png")
+
+#-----Step 4: Detecting Eyes using landmarks in dlib-----
+predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
+#these landmarks are based on the image above 
+left_eye_landmarks  = [36, 37, 38, 39, 40, 41]
+right_eye_landmarks = [42, 43, 44, 45, 46, 47]
 
 ###############################DUMMY DATA############################################
 data1 = {'Country': ['US','CA','GER','UK','FR'],
@@ -35,23 +47,23 @@ df3 = DataFrame(data3,columns=['Interest_Rate','Stock_Index_Price'])
 class App:
     def __init__(self, window, window_title, video_source=0):
         self.window = window
-        self.window.title(window_title)\
+        self.window.title(window_title)
 
         self.window.grid_rowconfigure(0, weight=1)
         self.window.grid_rowconfigure(7, weight=1)
         self.window.grid_columnconfigure(0, weight=1)
         self.window.grid_columnconfigure(7, weight=1)
         
-        self.frame = tk.Frame(self.window, width=1000, height=600, bg="white")
+        self.frame = tk.Frame(self.window, width=1000, height=1500, bg="white")
         self.frame.grid(row=0, column=0)
-
+        
         self.video_source = video_source
         # open video source (by default this will try to open the computer webcam)
         self.vid = MyVideoCapture(self.video_source)
 
         # Create a canvas that can fit the above video source size
-        self.canvas = tkinter.Canvas(self.frame, width = 500, height = 300)
-        self.canvas.grid(row=1, column=0, columnspan=3)
+        self.canvas = tkinter.Canvas(self.frame, width = 600, height = 400)
+        self.canvas.grid(row=1, column=0, columnspan=3, rowspan = 3)
         
         self.cal = Calendar(self.frame, selectmode='day', year=2020, month=5, day=22)
         self.cal.grid(row=1, column=3)
@@ -79,13 +91,13 @@ class App:
         self.lbl_rate.grid(row=0, column=2, padx=20, pady=20)
 
         self.btn_settings = tk.Button(self.frame, text="Settings", width=20, height=3)
-        self.btn_settings.grid(row=3, column=0)
+        self.btn_settings.grid(row=4, column=0, pady = 20)
 
-        self.btn_show = tk.Button(self.frame, text="SHOW VISION", width=25, height=3)
-        self.btn_show.grid(row=3, column=1)
+        self.btn_show = tk.Button(self.frame, text="SHOW VISION", command = lambda: self.change_cam(), width=25, height=3)
+        self.btn_show.grid(row=4, column=1, pady = 20)
 
         self.btn_notif = tk.Button(self.frame, text="Notifications", width=20, height=3)
-        self.btn_notif.grid(row=3, column=2)
+        self.btn_notif.grid(row=4, column=2, pady = 20)
 
 
         # Button that lets the user take a snapshot
@@ -107,13 +119,29 @@ class App:
 
     def update(self):
         # Get a frame from the video source
+        global bg_img
+        global counter
         ret, frame = self.vid.get_frame()
-
+        #cv2.putText(frame,"BLINKING : " + str(counter),(10,50), cv2.FONT_HERSHEY_SIMPLEX,
+                    #2,(255,255,255),2,cv2.LINE_AA)
+        
         if ret:
-            self.photo = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(frame))
-            self.canvas.create_image(0, 0, image = self.photo, anchor = tkinter.NW)
+            if key == 0:
+                self.photo = ImageTk.PhotoImage(image = Image.fromarray(frame))
+                self.canvas.create_image(0, 0, image = self.photo, anchor = tkinter.NW)
+            else:
+                self.photo = ImageTk.PhotoImage(bg_img)
+                self.canvas.create_image(300, 200, image = self.photo, anchor = tkinter.CENTER)
 
         self.window.after(self.delay, self.update)
+
+    def change_cam(self):
+        global key
+        if key == 0:
+            key = 1
+        else: 
+            key = 0
+            
 
     # def grad_date():
     #     date.config(text="Selected Date is: " + self.cal.get_date())
@@ -129,6 +157,36 @@ class MyVideoCapture:
     def get_frame(self):
         if self.vid.isOpened():
             ret, frame = self.vid.read()
+            global detector
+            global counter
+            predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
+            #these landmarks are based on the image above 
+            left_eye_landmarks  = [36, 37, 38, 39, 40, 41]
+            right_eye_landmarks = [42, 43, 44, 45, 46, 47]
+
+            #-----Step 2: converting image to grayscale-----
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+            #-----Step 3: Face detection with dlib-----
+            #detecting faces in the frame 
+            faces,_,_ = detector.run(image = gray, upsample_num_times = 0, adjust_threshold = 0.0)
+
+            #-----Step 4: Detecting Eyes using landmarks in dlib-----
+            for face in faces:
+                
+                landmarks = predictor(gray, face)
+
+                #-----Step 5: Calculating blink ratio for one eye-----
+                left_eye_ratio  = self.get_blink_ratio(left_eye_landmarks, landmarks)
+                right_eye_ratio = self.get_blink_ratio(right_eye_landmarks, landmarks)
+                blink_ratio     = (left_eye_ratio + right_eye_ratio) / 2
+
+                if blink_ratio > BLINK_RATIO_THRESHOLD:
+                    #Blink detected! Do Something!
+                    counter = counter + 1
+
+            #cv2.imshow('BlinkDetector', frame)
+            ret, frame = self.vid.read()
             if ret:
                 # Return a boolean success flag and the current frame converted to BGR
                 return (ret, cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
@@ -137,6 +195,33 @@ class MyVideoCapture:
         # else:
         #     return (ret, None)
 
+    def midpoint(self, point1 ,point2):
+        return (point1.x + point2.x)/2,(point1.y + point2.y)/2
+    
+    def euclidean_distance(self, point1 , point2):
+        return math.sqrt((point1[0] - point2[0])**2 + (point1[1] - point2[1])**2)
+
+    def get_blink_ratio(self, eye_points, facial_landmarks):
+        
+        #loading all the required points
+        corner_left  = (facial_landmarks.part(eye_points[0]).x, 
+                        facial_landmarks.part(eye_points[0]).y)
+        corner_right = (facial_landmarks.part(eye_points[3]).x, 
+                        facial_landmarks.part(eye_points[3]).y)
+        
+        center_top    = self.midpoint(facial_landmarks.part(eye_points[1]), 
+                                 facial_landmarks.part(eye_points[2]))
+        center_bottom = self.midpoint(facial_landmarks.part(eye_points[5]), 
+                                 facial_landmarks.part(eye_points[4]))
+
+        #calculating distance
+        horizontal_length = self.euclidean_distance(corner_left,corner_right)
+        vertical_length = self.euclidean_distance(center_top,center_bottom)
+
+        ratio = horizontal_length / vertical_length
+
+        return ratio
+    
      # Release the video source when the object is destroyed
     def __del__(self):
         if self.vid.isOpened():
