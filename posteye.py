@@ -3,6 +3,11 @@ from tkinter import messagebox
 from tkinter import ttk
 from datetime import date
 from tkcalendar import Calendar
+import tkinter
+import cv2
+import PIL.Image, PIL.ImageTk
+import time
+ 
 
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -27,71 +32,114 @@ data3 = {'Interest_Rate': [5,5.5,6,5.5,5.25,6.5,7,8,7.5,8.5],
         }  
 df3 = DataFrame(data3,columns=['Interest_Rate','Stock_Index_Price'])
 #####################################################################################
+class App:
+    def __init__(self, window, window_title, video_source=0):
+        self.window = window
+        self.window.title(window_title)\
 
-master = tk.Tk()
-master.title("POSTEYE")
+        self.window.grid_rowconfigure(0, weight=1)
+        self.window.grid_rowconfigure(7, weight=1)
+        self.window.grid_columnconfigure(0, weight=1)
+        self.window.grid_columnconfigure(7, weight=1)
+        
+        self.frame = tk.Frame(self.window, width=1000, height=600, bg="white")
+        self.frame.grid(row=0, column=0)
 
-master.grid_rowconfigure(0, weight=1)
-master.grid_rowconfigure(7, weight=1)
-master.grid_columnconfigure(0, weight=1)
-master.grid_columnconfigure(7, weight=1)
+        self.video_source = video_source
+        # open video source (by default this will try to open the computer webcam)
+        self.vid = MyVideoCapture(self.video_source)
 
-frame = tk.Frame(master, width=1000, height=600, bg="white")
-frame.grid(row=0, column=0)
-#frame.eval('tk::PlaceWindow . center')
+        # Create a canvas that can fit the above video source size
+        self.canvas = tkinter.Canvas(self.frame, width = 500, height = 300)
+        self.canvas.grid(row=1, column=0, columnspan=3)
+        
+        self.cal = Calendar(self.frame, selectmode='day', year=2020, month=5, day=22)
+        self.cal.grid(row=1, column=3)
 
-cal = Calendar(frame, selectmode='day', year=2020, month=5, day=22)
-cal.grid(row=1, column=3)
+        self.date = tk.Label(self.frame, text="")
+        self.date.grid(row=2, column=3)
 
-display = tk.Frame(frame, bg="black", width=500, height=300)
-display.grid(row=1, column=0, columnspan=3)
+        self.figure1 = plt.Figure(figsize=(3,2), dpi=100)
+        self.ax1 = self.figure1.add_subplot(111)
+        self.bar1 = FigureCanvasTkAgg(self.figure1, self.frame)
+        self.bar1.get_tk_widget().grid(row=3, column=3)
+        #bar1.get_tk_widget().pack()
+        #bar1.get_tk_widget().place(x=300, y=700)
+        self.df1 = df1[['Country','GDP_Per_Capita']].groupby('Country').sum()
+        self.df1.plot(kind='bar', legend=True, ax=self.ax1)
+        self.ax1.set_title('Country Vs. GDP Per Capita')
 
-def hide_widget(widget):
-    widget.pack_forget()
+        self.lbl_dur = tk.Label(self.frame, bg="gray", width=30, height=7)
+        self.lbl_dur.grid(row=0, column=0, padx=20, pady=20)
 
-def show_widget(widget):
-    widget.pack()
+        self.lbl_status = tk.Label(self.frame, bg="gray", width=30, height=7)
+        self.lbl_status.grid(row=0, column=1, padx=20, pady=20)
 
-def grad_date():
-    date.config(text="Selected Date is: " + cal.get_date())
+        self.lbl_rate = tk.Label(self.frame, bg="gray", width=30, height=7)
+        self.lbl_rate.grid(row=0, column=2, padx=20, pady=20)
 
-date = tk.Label(frame, text="")
-date.grid(row=2, column=3)
+        self.btn_settings = tk.Button(self.frame, text="Settings", width=20, height=3)
+        self.btn_settings.grid(row=3, column=0)
 
-figure1 = plt.Figure(figsize=(3,2), dpi=100)
-ax1 = figure1.add_subplot(111)
-bar1 = FigureCanvasTkAgg(figure1, frame)
-bar1.get_tk_widget().grid(row=3, column=3)
-#bar1.get_tk_widget().pack()
-#bar1.get_tk_widget().place(x=300, y=700)
-df1 = df1[['Country','GDP_Per_Capita']].groupby('Country').sum()
-df1.plot(kind='bar', legend=True, ax=ax1)
-ax1.set_title('Country Vs. GDP Per Capita')
+        self.btn_show = tk.Button(self.frame, text="SHOW VISION", width=25, height=3)
+        self.btn_show.grid(row=3, column=1)
 
-lbl_dur = tk.Label(frame, bg="gray", width=30, height=7)
-lbl_dur.grid(row=0, column=0, padx=20, pady=20)
+        self.btn_notif = tk.Button(self.frame, text="Notifications", width=20, height=3)
+        self.btn_notif.grid(row=3, column=2)
 
-lbl_status = tk.Label(frame, bg="gray", width=30, height=7)
-lbl_status.grid(row=0, column=1, padx=20, pady=20)
 
-lbl_rate = tk.Label(frame, bg="gray", width=30, height=7)
-lbl_rate.grid(row=0, column=2, padx=20, pady=20)
+        # Button that lets the user take a snapshot
+        # self.btn_snapshot=tkinter.Button(window, text="Snapshot", width=50, command=self.snapshot)
+        # self.btn_snapshot.pack(anchor=tkinter.CENTER, expand=True)
 
-#fileName = "sample.gif"
-#file_name = tk.PhotoImage(file=fileName)
-#canvas = tk.Canvas()
-#display = tk.Frame(master, bg="blue", width=100, height=100)
-#display.pack()
-#display.place(x=50, y=350)
-#canvas.create_image(100, 100, anchor='nw', image=file_name)
+        # After it is called once, the update method will be automatically called every delay milliseconds
+        self.delay = 15
+        self.update()
 
-btn_settings = tk.Button(frame, text="Settings", width=20, height=3)
-btn_settings.grid(row=3, column=0)
+        self.window.mainloop()
 
-btn_show = tk.Button(frame, text="SHOW VISION", command=lambda:display.pack_forget(), width=25, height=3)
-btn_show.grid(row=3, column=1)
+    def snapshot(self):
+        # Get a frame from the video source
+        ret, frame = self.vid.get_frame()
 
-btn_notif = tk.Button(frame, text="Notifications", width=20, height=3)
-btn_notif.grid(row=3, column=2)
+        if ret:
+            cv2.imwrite("frame-" + time.strftime("%d-%m-%Y-%H-%M-%S") + ".jpg", cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
 
-master.mainloop()
+    def update(self):
+        # Get a frame from the video source
+        ret, frame = self.vid.get_frame()
+
+        if ret:
+            self.photo = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(frame))
+            self.canvas.create_image(0, 0, image = self.photo, anchor = tkinter.NW)
+
+        self.window.after(self.delay, self.update)
+
+    # def grad_date():
+    #     date.config(text="Selected Date is: " + self.cal.get_date())
+
+
+class MyVideoCapture:
+    def __init__(self, video_source=0):
+        # Open the video source
+        self.vid = cv2.VideoCapture(video_source)
+        if not self.vid.isOpened():
+            raise ValueError("Unable to open video source", video_source)
+
+    def get_frame(self):
+        if self.vid.isOpened():
+            ret, frame = self.vid.read()
+            if ret:
+                # Return a boolean success flag and the current frame converted to BGR
+                return (ret, cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+            else:
+                return (ret, None)
+        # else:
+        #     return (ret, None)
+
+     # Release the video source when the object is destroyed
+    def __del__(self):
+        if self.vid.isOpened():
+            self.vid.release()
+
+App(tkinter.Tk(), "POSTEYE")
