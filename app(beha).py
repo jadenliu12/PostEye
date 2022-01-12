@@ -1,7 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk
-import tkinter.font as tkFont
 from datetime import date
 from tkcalendar import Calendar
 import tkinter
@@ -264,6 +263,7 @@ class App:
         self.btn_data = tk.Button(self.frame, text="Get Data", command = lambda: self.selected_date(), width=20, height=3)
         self.btn_data.grid(row=5, column=3, pady = 20)
 
+
         # Button that lets the user take a snapshot
         # self.btn_snapshot=tkinter.Button(window, text="Snapshot", width=50, command=self.snapshot)
         # self.btn_snapshot.pack(anchor=tkinter.CENTER, expand=True)
@@ -308,6 +308,8 @@ class App:
 
         self.lbl_rate.config(text = "{cnt} blinks/mins".format(cnt = timer_min.get_count()/60))
         self.window.after(self.delay, self.update)
+
+        count = count + 1
 
     def change_cam(self):
         global key
