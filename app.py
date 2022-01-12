@@ -316,8 +316,12 @@ class App:
         if(timer_min.is_minute):
             rate = timer_min.get_count()/60
             pred = self.br.predict(np.array(rate).reshape(-1,1))
-            print(pred)
-            self.lbl_status.config(text = "Normal")
+            text = ''
+            if(pred[0][0] == 1 && pred[0][1] == 1) text = "Sleepy & Tired"
+            elif(pred[0][0] == 1 && pred[0][1] == 0) text = "Tired"
+            elif(pred[0][0] == 0 && pred[0][1] == 1) text = "Sleepy"
+            elif(pred[0][0] == 0 && pred[0][1] == 0) text = "Normal"
+            self.lbl_status.config(text = text)
         
         self.lbl_rate.config(text = "{cnt:.2f} blinks/mins".format(cnt = timer_min.get_count()/60))
         self.lbl_dur.config(text = "{cnt} seconds \n {mnt} minutes \n {hr} hours".format(cnt = count, mnt = count // 60, hr = count // 3600))
@@ -429,6 +433,9 @@ class Timer:
 
     def get_count(self):
         return self.blink_no
+
+    def get_timer(self):
+        return self.cur_time
 
     def update_blink(self):
         if self.duration == 3600:
