@@ -1,7 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk
-import tkinter.font as tkFont
 from datetime import date
 from tkcalendar import Calendar
 import tkinter
@@ -27,6 +26,7 @@ toggle = 0
 token = 0
 bg_img = Image.open("./eye.png")
 theme = "white"
+count = 0
 
 #-----Step 4: Detecting Eyes using landmarks in dlib-----
 predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
@@ -261,6 +261,7 @@ class App:
         self.btn_data = tk.Button(self.frame, text="Get Data", command = lambda: self.selected_date(), width=20, height=3)
         self.btn_data.grid(row=5, column=3, pady = 20)
 
+
         # Button that lets the user take a snapshot
         # self.btn_snapshot=tkinter.Button(window, text="Snapshot", width=50, command=self.snapshot)
         # self.btn_snapshot.pack(anchor=tkinter.CENTER, expand=True)
@@ -293,8 +294,13 @@ class App:
                 self.photo = ImageTk.PhotoImage(bg_img)
                 self.canvas.create_image(300, 200, image = self.photo, anchor = tkinter.CENTER)
 
-        self.lbl_rate.config(text = "{cnt} blinks/mins".format(cnt = timer_min.get_count()/60))
+        global count
+        
+        self.lbl_rate.config(text = "{cnt:.2f} blinks/mins".format(cnt = timer_min.get_count()/60))
+        self.lbl_dur.config(text = "{cnt} seconds \n {mnt} minutes \n {hr} hours".format(cnt = count, mnt = count // 60, hr = count // 3600))
         self.window.after(self.delay, self.update)
+
+        count = count + 1
 
     def change_cam(self):
         global key
