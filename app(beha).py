@@ -57,6 +57,8 @@ def save():
     with open('records.txt', 'w') as fh:
         fh.write('\n'.join(rec for rec in my_records))
 
+
+
 class GradientFrame(tk.Canvas): # to make color gradient frames
     '''A gradient frame which uses a canvas to draw the background'''
     def __init__(self, parent, color1="red", color2="black", **kwargs):
@@ -327,10 +329,9 @@ class App:
         Notification(tk.Toplevel(), "Notification Settings")
 
     def toggle_window(self):
-        minim = Minimized(tk.Toplevel(), "Posteye")
+        Minimized(tk.Toplevel(), "Posteye")
         self.window.withdraw()
         
-
     def show(self):
         self.window.deiconify()    
 
@@ -367,11 +368,14 @@ class Minimized:
         self.btn_maximize.grid(row=1, column=0)
 
     def toggle_window(self):
-        app.show()
-        self.window.iconify()
+        self.hide()
+        initiate()
+        App(tkinter.Tk(), "POSTEYE")
+        
 
-    def showandhide(self):
-        self.window.iconify()
+    def hide(self):
+        self.window.destroy()
+        self.window.update()
 
 class Timer:
     def __init__(self, start, duration, blink_no):
@@ -412,6 +416,17 @@ class Timer:
             return True
         else:
             return False
+
+one_min = 60
+one_hrs = 3600
+first_execute_min = datetime.now() 
+first_execute_hrs = datetime.now()
+timer_min = Timer(first_execute_min, one_min, counter_min)
+timer_hrs = Timer(first_execute_hrs, one_hrs, counter_hrs)
+my_records = timer_hrs.get_records()
+
+def initiate():
+    cv2.setUseOptimized(True)
 
 class MyVideoCapture:
     def __init__(self, video_source=0):
@@ -497,13 +512,8 @@ class MyVideoCapture:
         if self.vid.isOpened():
             self.vid.release()
 
-cv2.setUseOptimized(True)
-first_execute_min = datetime.now() 
-first_execute_hrs = datetime.now()
-one_min = 60
-one_hrs = 3600
-timer_min = Timer(first_execute_min, one_min, counter_min)
-timer_hrs = Timer(first_execute_hrs, one_hrs, counter_hrs)
-my_records = timer_hrs.get_records()
-app = App(tkinter.Tk(), "POSTEYE")
+
+
+initiate()
+App(tkinter.Tk(), "POSTEYE")
 save()
