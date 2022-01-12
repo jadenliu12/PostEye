@@ -4,25 +4,31 @@ from tkinter import ttk
 from datetime import date
 from tkcalendar import Calendar
 import tkinter
-import time
 import cv2
 import dlib
 import math
 from PIL import Image, ImageTk
 import time
+from datetime import datetime
+from datetime import timedelta
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from pandas import DataFrame
 from threading import Thread
 BLINK_RATIO_THRESHOLD = 5.7
 
+#-----Step 3: Face detection with dlib-----
 detector = dlib.get_frontal_face_detector()
-counter = 0
+counter_min = 0
+counter_hrs = 0
 key = 0
+toggle = 0
 token = 0
 bg_img = Image.open("./eye.png")
-predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
+theme = "white"
 
+#-----Step 4: Detecting Eyes using landmarks in dlib-----
+predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
 #these landmarks are based on the image above 
 left_eye_landmarks  = [36, 37, 38, 39, 40, 41]
 right_eye_landmarks = [42, 43, 44, 45, 46, 47]
@@ -45,6 +51,12 @@ data3 = {'Interest_Rate': [5,5.5,6,5.5,5.25,6.5,7,8,7.5,8.5],
         }  
 df3 = DataFrame(data3,columns=['Interest_Rate','Stock_Index_Price'])
 #####################################################################################
+
+def save():
+    global my_records
+    with open('records.txt', 'w') as fh:
+        fh.write('\n'.join(rec for rec in my_records))
+
 class GradientFrame(tk.Canvas): # to make color gradient frames
     '''A gradient frame which uses a canvas to draw the background'''
     def __init__(self, parent, color1="red", color2="black", **kwargs):
@@ -72,31 +84,262 @@ class GradientFrame(tk.Canvas): # to make color gradient frames
             color = "#%4.4x%4.4x%4.4x" % (nr,ng,nb)
             self.create_line(i,0,i,height, tags=("gradient",), fill=color)
         self.lower("gradient")
-        
+
 class Notification:
     def __init__(self, window, window_title):
         self.window = window
         self.window.title(window_title)
-
+        
         self.frame = tk.Frame(self.window, width=300, height=500, bg="white")
         self.frame.grid(row=0, column=0)
-
-        self.brightness_on = tk.IntVar()
-
-        self.label_brightness = tk.Label(self.frame, text="Automatic Brightness Adjustment")
-        self.label_brightness.grid(row=0, column=0, columnspan=2)
-
-        self.brightness_check = tk.Checkbutton(self.frame, text="On", variable=self.brightness_on, onvalue=1, offvalue=0, height=5, width=20)
-        self.brightness_check.grid(row=1, column=0)        
         
+        self.alarm_on = tk.IntVar()
+        self.alarm_off = tk.IntVar()
+
+        self.label_alarm = tk.Label(self.frame, text="Alarm Notifications")
+        self.label_alarm.grid(row=0, column=0, columnspan=2)
+
+        self.alarm_on_check = tk.Checkbutton(self.frame, text="On", variable=self.alarm_on, onvalue=1, offvalue=0, height=5, width=20)
+        self.alarm_on_check.grid(row=1, column=0)
+
+        self.alarm_off_check = tk.Checkbutton(self.frame, text="Off", variable=self.alarm_off, onvalue=1, offvalue=0, height=5, width=20)
+        self.alarm_off_check.grid(row=1, column=1)
+
+
+        self.sleep_on = tk.IntVar()
+        self.sleep_off = tk.IntVar()
+
+        self.label_sleep = tk.Label(self.frame, text="Auto-Sleep Laptop")
+        self.label_sleep.grid(row=2, column=0, columnspan=2)
+
+        self.sleep_on_check = tk.Checkbutton(self.frame, text="On", variable=self.sleep_on, onvalue=1, offvalue=0, height=5, width=20)
+        self.sleep_on_check.grid(row=3, column=0)
+
+        self.sleep_off_check = tk.Checkbutton(self.frame, text="Off", variable=self.sleep_off, onvalue=1, offvalue=0, height=5, width=20)
+        self.sleep_off_check.grid(row=3, column=1)
+        
+
+        self.app_on = tk.IntVar()
+        self.app_off = tk.IntVar()
+
+        self.label_app = tk.Label(self.frame, text="Application Notifications")
+        self.label_app.grid(row=4, column=0, columnspan=2)
+
+        self.app_on_check = tk.Checkbutton(self.frame, text="On", variable=self.app_on, onvalue=1, offvalue=0, height=5, width=20)
+        self.app_on_check.grid(row=5, column=0)
+
+        self.app_off_check = tk.Checkbutton(self.frame, text="Off", variable=self.app_off, onvalue=1, offvalue=0, height=5, width=20)
+        self.app_off_check.grid(row=5, column=1)
+
+        self.btn_home = tk.Button(self.frame, text="Home")
+        self.btn_home.grid(row=6, column=0, columnspan=2)
+
+class Notification:
+    def __init__(self, window, window_title):
+        self.window = window
+        self.window.title(window_title)
+        
+        self.frame = tk.Frame(self.window, width=300, height=500, bg="white")
+        self.frame.grid(row=0, column=0)
+        
+        self.alarm_on = tk.IntVar()
+        self.alarm_off = tk.IntVar()
+
+        self.label_alarm = tk.Label(self.frame, text="Alarm Notifications")
+        self.label_alarm.grid(row=0, column=0, columnspan=2)
+
+        self.alarm_on_check = tk.Checkbutton(self.frame, text="On", variable=self.alarm_on, onvalue=1, offvalue=0, height=5, width=20)
+        self.alarm_on_check.grid(row=1, column=0)
+
+        self.alarm_off_check = tk.Checkbutton(self.frame, text="Off", variable=self.alarm_off, onvalue=1, offvalue=0, height=5, width=20)
+        self.alarm_off_check.grid(row=1, column=1)
+
+
+        self.sleep_on = tk.IntVar()
+        self.sleep_off = tk.IntVar()
+
+        self.label_sleep = tk.Label(self.frame, text="Auto-Sleep Laptop")
+        self.label_sleep.grid(row=2, column=0, columnspan=2)
+
+        self.sleep_on_check = tk.Checkbutton(self.frame, text="On", variable=self.sleep_on, onvalue=1, offvalue=0, height=5, width=20)
+        self.sleep_on_check.grid(row=3, column=0)
+
+        self.sleep_off_check = tk.Checkbutton(self.frame, text="Off", variable=self.sleep_off, onvalue=1, offvalue=0, height=5, width=20)
+        self.sleep_off_check.grid(row=3, column=1)
+        
+
+        self.app_on = tk.IntVar()
+        self.app_off = tk.IntVar()
+
+        self.label_app = tk.Label(self.frame, text="Application Notifications")
+        self.label_app.grid(row=4, column=0, columnspan=2)
+
+        self.app_on_check = tk.Checkbutton(self.frame, text="On", variable=self.app_on, onvalue=1, offvalue=0, height=5, width=20)
+        self.app_on_check.grid(row=5, column=0)
+
+        self.app_off_check = tk.Checkbutton(self.frame, text="Off", variable=self.app_off, onvalue=1, offvalue=0, height=5, width=20)
+        self.app_off_check.grid(row=5, column=1)
+
+        self.btn_home = tk.Button(self.frame, text="Home")
+        self.btn_home.grid(row=6, column=0, columnspan=2)
+
+
+
+class App:
+    def __init__(self, window, window_title, video_source=0):
+        self.window = window
+        self.window.title(window_title)
+
+        self.window.grid_rowconfigure(0, weight=1)
+        self.window.grid_rowconfigure(7, weight=1)
+        self.window.grid_columnconfigure(0, weight=1)
+        self.window.grid_columnconfigure(7, weight=1)
+        
+        # self.frame = tk.Frame(self.window, width=1000, height=1500, bg="white")
+        # self.frame.grid(row=0, column=0)
+
+        self.frame = tk.Frame(self.window, width=1200, height=1000, bg= "white")
+        self.frame.grid(row=1, column=0, padx=1)
+
+        self.canvas1 = GradientFrame(self.frame, "#00F4FF", "#00F3B9", width = 1300, height = 100, relief="ridge")
+        self.canvas1.grid(row=0, column=0 ,columnspan=4)
+
+        self.video_source = video_source
+        #open video source (by default this will try to open the computer webcam)
+        self.vid = MyVideoCapture(self.video_source)
+
+        #Create a canvas that can fit the above video source size
+        self.canvas = tkinter.Canvas(self.frame, width = 600, height = 400)
+        self.canvas.grid(row=2, column=0, columnspan=3, rowspan = 3)
+
+        todays_date = date.today()
+        self.year = int(todays_date.year)
+        self.month = int(todays_date.month)
+        self.day = int(todays_date.day)
+        self.cal = Calendar(self.frame, selectmode='day', year=self.year, month=self.month, day=self.day)
+        self.cal.grid(row=2, column=3)
+
+        self.date = tk.Label(self.frame, text="")
+        self.date.grid(row=3, column=3)
+        
+        self.minimize = tk.Button(self.frame, text="Minimize", command=lambda: self.toggle_window())
+        self.minimize.grid(row=1, column=3)
+
+        self.figure1 = plt.Figure(figsize=(3,2), dpi=100)
+        self.ax1 = self.figure1.add_subplot(111)
+        self.bar1 = FigureCanvasTkAgg(self.figure1, self.frame)
+        self.bar1.get_tk_widget().grid(row=3, column=3)
+        #bar1.get_tk_widget().pack()
+        #bar1.get_tk_widget().place(x=300, y=700)
+        self.df1 = df1[['Country','GDP_Per_Capita']].groupby('Country').sum()
+        self.df1.plot(kind='bar', legend=True, ax=self.ax1)
+        self.ax1.set_title('Country Vs. GDP Per Capita')
+
+        self.lbl_dur = tk.Label(self.frame, bg="white", borderwidth=2, width=30, height=7, relief="groove")
+        self.lbl_dur.grid(row=1, column=0, padx=20, pady=20)
+
+        self.lbl_status = tk.Label(self.frame, bg="white", borderwidth=2, width=30, height=7, relief="groove")
+        self.lbl_status.grid(row=1, column=1, padx=20, pady=20)
+
+        self.lbl_rate = tk.Label(self.frame, bg="white", borderwidth=2, width=30, height=7, relief="groove")
+        self.lbl_rate.grid(row=1, column=2, padx=20, pady=20)
+
+        self.btn_settings = tk.Button(self.frame, text="Settings", command = lambda: self.change_color(), width=20, height=3)
+        self.btn_settings.grid(row=5, column=0, pady = 20)
+
+        self.btn_show = tk.Button(self.frame, text="SHOW VISION", command = lambda: self.change_cam(), width=25, height=3)
+        self.btn_show.grid(row=5, column=1, pady = 20)
+
+        self.btn_notif = tk.Button(self.frame, text="Notifications", command = lambda: self.on_click_notification(), width=20, height=3)
+        self.btn_notif.grid(row=5, column=2, pady = 20)
+
+        self.btn_data = tk.Button(self.frame, text="Get Data", command = lambda: self.selected_date(), width=20, height=3)
+        self.btn_data.grid(row=5, column=3, pady = 20)
+
+
+        # Button that lets the user take a snapshot
+        # self.btn_snapshot=tkinter.Button(window, text="Snapshot", width=50, command=self.snapshot)
+        # self.btn_snapshot.pack(anchor=tkinter.CENTER, expand=True)
+
+        # After it is called once, the update method will be automatically called every delay milliseconds
+        self.delay = 15
+        self.update()
+
+        self.window.mainloop()
+
+    # def snapshot(self):
+    #     # Get a frame from the video source
+    #     ret, frame = self.vid.get_frame()
+
+    #     if ret:
+    #         cv2.imwrite("frame-" + time.strftime("%d-%m-%Y-%H-%M-%S") + ".jpg", cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
+
+    def update(self):
+         # Get a frame from the video source
+         global bg_img
+         global counter_min
+         global counter_hrs
+         ret, frame = self.vid.get_frame()
+         cv2.putText(frame,"BLINKING : " + str(counter_min),(10,50), cv2.FONT_HERSHEY_SIMPLEX,
+                     2,(255,255,255),2,cv2.LINE_AA)
+        
+         if ret:
+             if key == 0:
+                 self.photo = ImageTk.PhotoImage(image = Image.fromarray(frame))
+                 self.canvas.create_image(0, 0, image = self.photo, anchor = tkinter.NW)
+             else:
+                 self.photo = ImageTk.PhotoImage(bg_img)
+                 self.canvas.create_image(300, 200, image = self.photo, anchor = tkinter.CENTER)
+
+         self.window.after(self.delay, self.update)
+
+    def change_cam(self):
+        global key
+        if key == 0:
+            key = 1
+        else: 
+            key = 0
+            
+    def selected_date(self):
+        print("Selected Date is: " + self.cal.get_date())
+        # date.config(text="Selected Date is: " + self.cal.get_date())
+
+    def change_color(self):
+        global token
+        if token == 0:
+            self.frame.config(bg="#626262")
+            self.lbl_dur.config(bg="#393E46")
+            self.lbl_status.config(bg="#393E46")
+            self.lbl_rate.config(bg="#393E46")
+            self.canvas1 = GradientFrame(self.frame, "#00F4FF", "#2187FF", width = 1300, height = 100, relief="ridge")
+            self.canvas1.grid(row=0, column=0 ,columnspan=4)
+            token = 1
+        else:
+            self.frame.config(bg="white")
+            self.lbl_dur.config(bg="white")
+            self.lbl_status.config(bg="white")
+            self.lbl_rate.config(bg="white")
+            self.canvas1 = GradientFrame(self.frame, "#00F4FF", "#00F3B9", width = 1300, height = 100, relief="ridge")
+            self.canvas1.grid(row=0, column=0 ,columnspan=4)
+            token = 0
+
+    def on_click_notification(self):
+        Notification(tk.Toplevel(), "Notification Settings")
+
+    def toggle_window(self):
+        minim = Minimized(tk.Toplevel(), "Posteye")
+        self.window.withdraw()
+        
+
+    def show(self):
+        self.window.deiconify()    
+
 class Minimized:
     def __init__(self, window, window_title):
         self.window = window
         self.window.title(window_title)
 
-        self.window.wm_attributes('-transparentcolor','white')
-
-        self.window.geometry('364x150+1000+690')
+        self.window.geometry('364x150+100+69')
         self.window.resizable(0, 0)
         self.window.resizable(False, False)
         self.window.iconbitmap('./eye_icon.ico')
@@ -120,168 +363,68 @@ class Minimized:
         self.lbl_rate = tk.Label(self.canvas1, text="hello", bg= "#00F4FF", height=4, font=('Arial', 11))
         self.lbl_rate.grid(row=0, column=2, padx = 50)
 
-        
-        
-class App:
-    def __init__(self, window, window_title, video_source=0):
-        self.window = window
-        self.window.title(window_title)
+        self.btn_maximize = tk.Button(self.canvas1, text="Maximize", command=lambda: self.toggle_window())
+        self.btn_maximize.grid(row=1, column=0)
 
-        self.window.grid_rowconfigure(0, weight=1)
-        self.window.grid_rowconfigure(7, weight=1)
-        self.window.grid_columnconfigure(0, weight=1)
-        self.window.grid_columnconfigure(7, weight=1)
+    def toggle_window(self):
+        app.show()
+        self.window.iconify()
 
-        self.frame = tk.Frame(self.window, width=1200, height=1000, bg= "white")
-        self.frame.grid(row=1, column=0, padx=1)
+    def showandhide(self):
+        self.window.iconify()
 
-        self.canvas1 = GradientFrame(self.frame, "#00F4FF", "#00F3B9", width = 1300, height = 100, relief="ridge")
-        self.canvas1.grid(row=0, column=0 ,columnspan=4)
-        
-        self.video_source = video_source
-        # open video source (by default this will try to open the computer webcam)
-        self.vid = MyVideoCapture(self.video_source)
+class Timer:
+    def __init__(self, start, duration, blink_no):
+        self.start = start
+        self.duration = duration #in seconds
+        self.blink_no = blink_no
+        self.records = []
+        self.cur_time = datetime.now()
 
-        # Create a canvas that can fit the above video source size
-        self.canvas = tkinter.Canvas(self.frame, width = 600, height = 400)
-        self.canvas.grid(row=2, column=0, columnspan=3, rowspan = 3)
-        
-        self.cal = Calendar(self.frame, selectmode='day', year=2020, month=5, day=22)
-        self.cal.grid(row=2, column=3)
+    def get_records(self):
+        return self.records
 
-        self.date = tk.Label(self.frame, text="")
-        self.date.grid(row=3, column=3)
-
-        self.figure1 = plt.Figure(figsize=(3,2), dpi=100)
-        self.ax1 = self.figure1.add_subplot(111)
-        self.bar1 = FigureCanvasTkAgg(self.figure1, self.frame)
-        self.bar1.get_tk_widget().grid(row=3, column=3)
-        #bar1.get_tk_widget().pack()
-        #bar1.get_tk_widget().place(x=300, y=700)
-        
-        self.df1 = df1[['Country','GDP_Per_Capita']].groupby('Country').sum()
-        self.df1.plot(kind='bar', legend=True, ax=self.ax1)
-        self.ax1.set_title('Country Vs. GDP Per Capita')
-
-        self.lbl_dur = tk.Label(self.frame, bg="white", width=35, height=7, borderwidth=2, relief="groove")
-        self.lbl_dur.grid(row=1, column=0, padx=20, pady=20)
-
-        self.lbl_status = tk.Label(self.frame, bg="white", width=35, height=7, borderwidth=2, relief="groove")
-        self.lbl_status.grid(row=1, column=1, padx=20, pady=20, columnspan=2)
-
-        self.lbl_rate = tk.Label(self.frame, bg="white", width=35, height=7, borderwidth=2, relief="groove")
-        self.lbl_rate.grid(row=1, column=3, padx=20, pady=20)
-
-        self.btn_settings = tk.Button(self.frame, text="Settings", command = lambda: self.change_color(), width=20, height=3, font=('Didact Gothic', 11))
-        self.btn_settings.grid(row=5, column=0, pady = 20)
-
-        self.btn_show = tk.Button(self.frame, text="SHOW VISION", command = lambda: self.change_cam(), width=40, height=3, font=('Didact Gothic', 11))
-        self.btn_show.grid(row=5, column=1, pady = 20)
-
-        self.btn_notif = tk.Button(self.frame, text="Notifications", command = lambda: self.on_click_notification(), width=20, height=3, font=('Didact Gothic', 11))
-        self.btn_notif.grid(row=5, column=2, pady = 20, padx = 50)
-        
-        self.btn_temp = tk.Button(self.frame, text="Coba", command = lambda: self.on_click_minim(), width=20, height=3, font=('Didact Gothic', 11))
-        self.btn_temp.grid(row=5, column=3, pady = 20)
-
-        # Button that lets the user take a snapshot
-        # self.btn_snapshot=tkinter.Button(window, text="Snapshot", width=50, command=self.snapshot)
-        # self.btn_snapshot.pack(anchor=tkinter.CENTER, expand=True)
-
-        # After it is called once, the update method will be automatically called every delay milliseconds
-        self.delay = 15
-        self.update()
-
-        self.window.mainloop()
-
-    def snapshot(self):
-        # Get a frame from the video source
-        ret, frame = self.vid.get_frame()
-
-        if ret:
-            cv2.imwrite("frame-" + time.strftime("%d-%m-%Y-%H-%M-%S") + ".jpg", cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
-
-    def update(self):
-        # Get a frame from the video source
-        global bg_img
-        global counter
-        ret, frame = self.vid.get_frame()
-        #cv2.putText(frame,"BLINKING : " + str(counter),(10,50), cv2.FONT_HERSHEY_SIMPLEX,
-                    #2,(255,255,255),2,cv2.LINE_AA)
-        
-        if ret:
-            if key == 0:
-                self.photo = ImageTk.PhotoImage(image = Image.fromarray(frame))
-                self.canvas.create_image(0, 0, image = self.photo, anchor = tkinter.NW)
+    def update_blink(self):
+        if self.duration == 3600:
+            if (self.cur_time) >= (self.start + timedelta(seconds=self.duration)):
+                now = str(datetime.now())
+                no_blink = str(self.blink_no)
+                insert = now + ' ' + no_blink
+                self.records.append(insert)
+                self.blink_no = 0
             else:
-                self.photo = ImageTk.PhotoImage(bg_img)
-                self.canvas.create_image(300, 200, image = self.photo, anchor = tkinter.CENTER)
-
-        self.window.after(self.delay, self.update)
-
-    def change_cam(self):
-        global key
-        if key == 0:
-            key = 1
-        else: 
-            key = 0
-
-    def change_color(self):
-        global token
-        if token == 0:
-            self.frame.config(bg="#626262")
-            self.lbl_dur.config(bg="#393E46")
-            self.lbl_status.config(bg="#393E46")
-            self.lbl_rate.config(bg="#393E46")
-            self.canvas1 = GradientFrame(self.frame, "#00F4FF", "#2187FF", width = 1300, height = 100, relief="ridge")
-            self.canvas1.grid(row=0, column=0 ,columnspan=4)
-            token = 1
+                self.blink_no += 1
         else:
-            self.frame.config(bg="white")
-            self.lbl_dur.config(bg="white")
-            self.lbl_status.config(bg="white")
-            self.lbl_rate.config(bg="white")
-            self.canvas1 = GradientFrame(self.frame, "#00F4FF", "#00F3B9", width = 1300, height = 100, relief="ridge")
-            self.canvas1.grid(row=0, column=0 ,columnspan=4)
-            token = 0
+            if (self.cur_time) >= (self.start + timedelta(seconds=self.duration)):
+                self.blink_no = 0
+            else:
+                self.blink_no += 1
+        return self.blink_no
 
-    def on_click_notification(self):
-        Notification(tk.Toplevel(), "Notification Settings")
-    
-    def on_click_minim(self):
-        Minimized(tk.Toplevel(), "Posteye")
-            
-            
-    # def grad_date():
-    #     date.config(text="Selected Date is: " + self.cal.get_date())
+    def is_minute(self):
+        if (self.cur_time) >= (self.start + timedelta(seconds=60)):
+            return True
+        else:
+            return False
 
+    def is_hour(self):
+        if (self.cur_time) >= (self.start + timedelta(seconds=3600)):
+            return True
+        else:
+            return False
 
 class MyVideoCapture:
     def __init__(self, video_source=0):
         # Open the video source
         self.vid = cv2.VideoCapture(video_source)
-        self.vid.set(cv2.CAP_PROP_POS_MSEC, 1000)
         if not self.vid.isOpened():
             raise ValueError("Unable to open video source", video_source)
-        self.thread = Thread(target=self.update, args=())
-        self.thread.daemon = True
-        self.thread.start()
-
-    def update(self):
-        # Read the next frame from the stream in a different thread
-        while True:
-            if self.vid.isOpened():
-                (self.status, self.frame) = self.vid.read()
-            time.sleep(.01)
 
     def get_frame(self):
+        global first_execute_min,  first_execute_hrs, one_min, one_hrs
         if self.vid.isOpened():
-            self.vid.set(3, 480)
-            self.vid.set(4, 360)
-            self.vid.set(15, 0.1)
             ret, frame = self.vid.read()
-            global detector
-            global counter
+            global detector, counter_min, counter_hrs
             predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
             #these landmarks are based on the image above 
             left_eye_landmarks  = [36, 37, 38, 39, 40, 41]
@@ -304,9 +447,13 @@ class MyVideoCapture:
                 right_eye_ratio = self.get_blink_ratio(right_eye_landmarks, landmarks)
                 blink_ratio     = (left_eye_ratio + right_eye_ratio) / 2
 
+                first_execute_min = datetime.now() if timer_min.is_minute() else first_execute_min 
+                first_execute_hrs = datetime.now() if timer_hrs.is_hour() else first_execute_hrs
+
                 if blink_ratio > BLINK_RATIO_THRESHOLD:
                     #Blink detected! Do Something!
-                    counter = counter + 1
+                    counter_min = timer_min.update_blink()
+                    counter_hrs = timer_hrs.update_blink()
 
             #cv2.imshow('BlinkDetector', frame)
             ret, frame = self.vid.read()
@@ -350,4 +497,13 @@ class MyVideoCapture:
         if self.vid.isOpened():
             self.vid.release()
 
-App(tkinter.Tk(), "POSTEYE")
+cv2.setUseOptimized(True)
+first_execute_min = datetime.now() 
+first_execute_hrs = datetime.now()
+one_min = 60
+one_hrs = 3600
+timer_min = Timer(first_execute_min, one_min, counter_min)
+timer_hrs = Timer(first_execute_hrs, one_hrs, counter_hrs)
+my_records = timer_hrs.get_records()
+app = App(tkinter.Tk(), "POSTEYE")
+save()
