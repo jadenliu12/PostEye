@@ -45,7 +45,6 @@ data3 = {'Interest_Rate': [5,5.5,6,5.5,5.25,6.5,7,8,7.5,8.5],
         }  
 df3 = DataFrame(data3,columns=['Interest_Rate','Stock_Index_Price'])
 #####################################################################################
-
 class GradientFrame(tk.Canvas): # to make color gradient frames
     '''A gradient frame which uses a canvas to draw the background'''
     def __init__(self, parent, color1="red", color2="black", **kwargs):
@@ -74,9 +73,57 @@ class GradientFrame(tk.Canvas): # to make color gradient frames
             self.create_line(i,0,i,height, tags=("gradient",), fill=color)
         self.lower("gradient")
         
+class Notification:
+    def __init__(self, window, window_title):
+        self.window = window
+        self.window.title(window_title)
+
+        self.frame = tk.Frame(self.window, width=300, height=500, bg="white")
+        self.frame.grid(row=0, column=0)
+
+        self.brightness_on = tk.IntVar()
+
+        self.label_brightness = tk.Label(self.frame, text="Automatic Brightness Adjustment")
+        self.label_brightness.grid(row=0, column=0, columnspan=2)
+
+        self.brightness_check = tk.Checkbutton(self.frame, text="On", variable=self.brightness_on, onvalue=1, offvalue=0, height=5, width=20)
+        self.brightness_check.grid(row=1, column=0)        
+        
+class Minimized:
+    def __init__(self, window, window_title):
+        self.window = window
+        self.window.title(window_title)
+
+        self.window.wm_attributes('-transparentcolor','white')
+
+        self.window.geometry('364x150+1000+690')
+        self.window.resizable(0, 0)
+        self.window.resizable(False, False)
+        self.window.iconbitmap('./eye_icon.ico')
+        
+        self.frame = tk.Frame(self.window, width=364, height=150, bg= "#626262")
+        self.frame.grid(row=0, column=0)
+        
+        self.canvas1 = tk.Frame(self.frame, width = 364, height=30, bg= "#00F4FF")
+        self.canvas1.grid(row=0, column=0 ,columnspan=4)
+
+        #temp = ImageTk.PhotoImage(Image.open("./eye_color.png"))
+        #self.img = tk.Label(self.canvas1, image = temp, height=6)
+        #self.img.pack()  
+
+        self.lbl_dur = tk.Label(self.canvas1, text="hello", bg= "#00F4FF", height=4, font=('Arial', 11))
+        self.lbl_dur.grid(row=0, column=0, padx = 50)
+
+        self.lbl_status = tk.Label(self.canvas1, text="hello", bg= "#00F4FF", height=4, font=('Arial', 11))
+        self.lbl_status.grid(row=0, column=1, padx = 50)
+
+        self.lbl_rate = tk.Label(self.canvas1, text="hello", bg= "#00F4FF", height=4, font=('Arial', 11))
+        self.lbl_rate.grid(row=0, column=2, padx = 50)
+
+        
+        
 class App:
     def __init__(self, window, window_title, video_source=0):
-        global bg_Color
         self.window = window
         self.window.title(window_title)
 
@@ -88,7 +135,7 @@ class App:
         self.frame = tk.Frame(self.window, width=1200, height=1000, bg= "white")
         self.frame.grid(row=1, column=0, padx=1)
 
-        self.canvas1 = GradientFrame(self.frame, "#00F4FF", "#00F3B9", width = 1200, height = 100, relief="flat")
+        self.canvas1 = GradientFrame(self.frame, "#00F4FF", "#00F3B9", width = 1300, height = 100, relief="ridge")
         self.canvas1.grid(row=0, column=0 ,columnspan=4)
         
         self.video_source = video_source
@@ -116,24 +163,26 @@ class App:
         self.df1.plot(kind='bar', legend=True, ax=self.ax1)
         self.ax1.set_title('Country Vs. GDP Per Capita')
 
-        self.lbl_dur = tk.Label(self.frame, bg="gray", width=30, height=7)
+        self.lbl_dur = tk.Label(self.frame, bg="white", width=35, height=7, borderwidth=2, relief="groove")
         self.lbl_dur.grid(row=1, column=0, padx=20, pady=20)
 
-        self.lbl_status = tk.Label(self.frame, bg="gray", width=30, height=7)
+        self.lbl_status = tk.Label(self.frame, bg="white", width=35, height=7, borderwidth=2, relief="groove")
         self.lbl_status.grid(row=1, column=1, padx=20, pady=20, columnspan=2)
 
-        self.lbl_rate = tk.Label(self.frame, bg="gray", width=30, height=7)
+        self.lbl_rate = tk.Label(self.frame, bg="white", width=35, height=7, borderwidth=2, relief="groove")
         self.lbl_rate.grid(row=1, column=3, padx=20, pady=20)
 
-        self.btn_settings = tk.Button(self.frame, text="Settings", command = lambda: self.change_color(), width=20, height=3)
+        self.btn_settings = tk.Button(self.frame, text="Settings", command = lambda: self.change_color(), width=20, height=3, font=('Didact Gothic', 11))
         self.btn_settings.grid(row=5, column=0, pady = 20)
 
-        self.btn_show = tk.Button(self.frame, text="SHOW VISION", command = lambda: self.change_cam(), width=40, height=3)
+        self.btn_show = tk.Button(self.frame, text="SHOW VISION", command = lambda: self.change_cam(), width=40, height=3, font=('Didact Gothic', 11))
         self.btn_show.grid(row=5, column=1, pady = 20)
 
-        self.btn_notif = tk.Button(self.frame, text="Notifications", width=20, height=3)
+        self.btn_notif = tk.Button(self.frame, text="Notifications", command = lambda: self.on_click_notification(), width=20, height=3, font=('Didact Gothic', 11))
         self.btn_notif.grid(row=5, column=2, pady = 20, padx = 50)
-
+        
+        self.btn_temp = tk.Button(self.frame, text="Coba", command = lambda: self.on_click_minim(), width=20, height=3, font=('Didact Gothic', 11))
+        self.btn_temp.grid(row=5, column=3, pady = 20)
 
         # Button that lets the user take a snapshot
         # self.btn_snapshot=tkinter.Button(window, text="Snapshot", width=50, command=self.snapshot)
@@ -181,16 +230,28 @@ class App:
         global token
         if token == 0:
             self.frame.config(bg="#626262")
-            self.canvas1 = GradientFrame(self.frame, "#00F4FF", "#2187FF", width = 1200, height = 100, relief="flat")
+            self.lbl_dur.config(bg="#393E46")
+            self.lbl_status.config(bg="#393E46")
+            self.lbl_rate.config(bg="#393E46")
+            self.canvas1 = GradientFrame(self.frame, "#00F4FF", "#2187FF", width = 1300, height = 100, relief="ridge")
             self.canvas1.grid(row=0, column=0 ,columnspan=4)
             token = 1
         else:
             self.frame.config(bg="white")
-            self.canvas1 = GradientFrame(self.frame, "#00F4FF", "#00F3B9", width = 1200, height = 100, relief="flat")
+            self.lbl_dur.config(bg="white")
+            self.lbl_status.config(bg="white")
+            self.lbl_rate.config(bg="white")
+            self.canvas1 = GradientFrame(self.frame, "#00F4FF", "#00F3B9", width = 1300, height = 100, relief="ridge")
             self.canvas1.grid(row=0, column=0 ,columnspan=4)
             token = 0
-            
 
+    def on_click_notification(self):
+        Notification(tk.Toplevel(), "Notification Settings")
+    
+    def on_click_minim(self):
+        Minimized(tk.Toplevel(), "Posteye")
+            
+            
     # def grad_date():
     #     date.config(text="Selected Date is: " + self.cal.get_date())
 
