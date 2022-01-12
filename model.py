@@ -13,8 +13,7 @@ from skmultilearn.problem_transform import BinaryRelevance
 # Multi Label Pkgs
 
 
-url = "Posteye_data.csv"
-dataset = pd.read_csv(url)
+
 
 class binary_relevance:
     def __init__(self, url, dataset):
@@ -42,7 +41,6 @@ class binary_relevance:
         # print(accuracy_score(y_test,br_prediction))
         # print(hamming_loss(y_test,br_prediction))
         return br_prediction.toarray()
-br = binary_relevance(url, dataset)
-X_train, X_test, y_train, y_test = br.split_data()
 
-print(br.predict(np.array(20).reshape(-1,1)))
+
+# print(br.predict(np.array(11).reshape(-1,1)))

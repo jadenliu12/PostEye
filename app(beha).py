@@ -15,7 +15,16 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from pandas import DataFrame
 from threading import Thread
+from model import binary_relevance
+import pandas as pd
+import numpy as np
 BLINK_RATIO_THRESHOLD = 5.7
+
+url = "Posteye_data.csv"
+dataset = pd.read_csv(url)
+br = binary_relevance(url, dataset)
+X_train, X_test, y_train, y_test = br.split_data()
+print(br.predict(np.array(1).reshape(-1,1)))
 
 #-----Step 3: Face detection with dlib-----
 detector = dlib.get_frontal_face_detector()
