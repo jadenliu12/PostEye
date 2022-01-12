@@ -12,9 +12,6 @@ from sklearn.metrics import accuracy_score,hamming_loss,classification_report
 from skmultilearn.problem_transform import BinaryRelevance
 # Multi Label Pkgs
 
-
-
-
 class binary_relevance:
     def __init__(self, url, dataset):
         self.url = url

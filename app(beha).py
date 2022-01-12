@@ -16,6 +16,9 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from pandas import DataFrame
 from threading import Thread
+from model import binary_relevance
+import pandas as pd
+import numpy as np
 BLINK_RATIO_THRESHOLD = 5.7
 
 #-----Step 3: Face detection with dlib-----
@@ -27,6 +30,7 @@ toggle = 0
 token = 0
 bg_img = Image.open("./eye.png")
 theme = "white"
+url = "Posteye_data.csv"
 
 #-----Step 4: Detecting Eyes using landmarks in dlib-----
 predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
@@ -188,10 +192,9 @@ class Settings:
         self.btn_home = tk.Button(self.frame, text="Home")
         self.btn_home.grid(row=6, column=0, columnspan=2)
 
-
-
 class App:
     def __init__(self, window, window_title, video_source=0):
+        global url
         self.window = window
         self.window.title(window_title)
 
@@ -243,7 +246,7 @@ class App:
         self.lbl_dur = tk.Label(self.frame, bg="white", borderwidth=2, width=30, height=7, relief="groove", fg="black")
         self.lbl_dur.grid(row=1, column=0, padx=20, pady=20)
 
-        self.lbl_status = tk.Label(self.frame, bg="white", borderwidth=2, width=30, height=7, relief="groove", fg="black")
+        self.lbl_status = tk.Label(self.frame, bg="white", borderwidth=2, width=30, height=7, relief="groove", fg="black", text = "Normal")
         self.lbl_status.grid(row=1, column=1, padx=20, pady=20)
 
         self.lbl_rate = tk.Label(self.frame, bg="white", borderwidth=2, width=30, height=7, relief="groove", fg="black")
@@ -264,6 +267,10 @@ class App:
         # Button that lets the user take a snapshot
         # self.btn_snapshot=tkinter.Button(window, text="Snapshot", width=50, command=self.snapshot)
         # self.btn_snapshot.pack(anchor=tkinter.CENTER, expand=True)
+        self.dataset = pd.read_csv(url)
+        self.br = binary_relevance(url, self.dataset)
+        self.X_train, self.X_test, self.y_train, self.y_test = self.br.split_data()
+
 
         # After it is called once, the update method will be automatically called every delay milliseconds
         self.delay = 15
@@ -292,6 +299,12 @@ class App:
             else:
                 self.photo = ImageTk.PhotoImage(bg_img)
                 self.canvas.create_image(300, 200, image = self.photo, anchor = tkinter.CENTER)
+
+        if(timer_min.is_minute):
+            rate = timer_min.get_count()/60
+            pred = self.br.predict(np.array(rate).reshape(-1,1))
+            print(pred)
+            self.lbl_status.config(text = "Normal")
 
         self.lbl_rate.config(text = "{cnt} blinks/mins".format(cnt = timer_min.get_count()/60))
         self.window.after(self.delay, self.update)
@@ -391,6 +404,9 @@ class Timer:
 
     def get_count(self):
         return self.blink_no
+
+    def get_time(self):
+        return self.cur_time
 
     def update_blink(self):
         if self.duration == 3600:
