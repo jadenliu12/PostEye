@@ -279,6 +279,9 @@ class App:
         # Button that lets the user take a snapshot
         # self.btn_snapshot=tkinter.Button(window, text="Snapshot", width=50, command=self.snapshot)
         # self.btn_snapshot.pack(anchor=tkinter.CENTER, expand=True)
+        self.dataset = pd.read_csv(url)
+        self.br = binary_relevance(url, self.dataset)
+        self.X_train, self.X_test, self.y_train, self.y_test = self.br.split_data()
 
         # After it is called once, the update method will be automatically called every delay milliseconds
         self.delay = 15
@@ -309,6 +312,12 @@ class App:
                 self.canvas.create_image(300, 200, image = self.photo, anchor = tkinter.CENTER)
 
         global count, counter
+
+        if(timer_min.is_minute):
+            rate = timer_min.get_count()/60
+            pred = self.br.predict(np.array(rate).reshape(-1,1))
+            print(pred)
+            self.lbl_status.config(text = "Normal")
         
         self.lbl_rate.config(text = "{cnt:.2f} blinks/mins".format(cnt = timer_min.get_count()/60))
         self.lbl_dur.config(text = "{cnt} seconds \n {mnt} minutes \n {hr} hours".format(cnt = count, mnt = count // 60, hr = count // 3600))
