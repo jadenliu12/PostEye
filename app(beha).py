@@ -15,16 +15,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from pandas import DataFrame
 from threading import Thread
-from model import binary_relevance
-import pandas as pd
-import numpy as np
 BLINK_RATIO_THRESHOLD = 5.7
-
-url = "Posteye_data.csv"
-dataset = pd.read_csv(url)
-br = binary_relevance(url, dataset)
-X_train, X_test, y_train, y_test = br.split_data()
-print(br.predict(np.array(1).reshape(-1,1)))
 
 #-----Step 3: Face detection with dlib-----
 detector = dlib.get_frontal_face_detector()
@@ -65,8 +56,6 @@ def save():
     global my_records
     with open('records.txt', 'w') as fh:
         fh.write('\n'.join(rec for rec in my_records))
-
-
 
 class GradientFrame(tk.Canvas): # to make color gradient frames
     '''A gradient frame which uses a canvas to draw the background'''
@@ -145,7 +134,7 @@ class Notification:
         self.btn_home = tk.Button(self.frame, text="Home")
         self.btn_home.grid(row=6, column=0, columnspan=2)
 
-class Notification:
+class Settings:
     def __init__(self, window, window_title):
         self.window = window
         self.window.title(window_title)
@@ -153,10 +142,10 @@ class Notification:
         self.frame = tk.Frame(self.window, width=300, height=500, bg="white")
         self.frame.grid(row=0, column=0)
         
-        self.alarm_on = tk.IntVar()
+        self.alarm_on = tk.IntVar(value = 1)
         self.alarm_off = tk.IntVar()
 
-        self.label_alarm = tk.Label(self.frame, text="Alarm Notifications")
+        self.label_alarm = tk.Label(self.frame, text="Automatic Brightness Adjustment")
         self.label_alarm.grid(row=0, column=0, columnspan=2)
 
         self.alarm_on_check = tk.Checkbutton(self.frame, text="On", variable=self.alarm_on, onvalue=1, offvalue=0, height=5, width=20)
@@ -166,10 +155,10 @@ class Notification:
         self.alarm_off_check.grid(row=1, column=1)
 
 
-        self.sleep_on = tk.IntVar()
+        self.sleep_on = tk.IntVar(value = 1)
         self.sleep_off = tk.IntVar()
 
-        self.label_sleep = tk.Label(self.frame, text="Auto-Sleep Laptop")
+        self.label_sleep = tk.Label(self.frame, text="Blink Detection")
         self.label_sleep.grid(row=2, column=0, columnspan=2)
 
         self.sleep_on_check = tk.Checkbutton(self.frame, text="On", variable=self.sleep_on, onvalue=1, offvalue=0, height=5, width=20)
@@ -178,17 +167,21 @@ class Notification:
         self.sleep_off_check = tk.Checkbutton(self.frame, text="Off", variable=self.sleep_off, onvalue=1, offvalue=0, height=5, width=20)
         self.sleep_off_check.grid(row=3, column=1)
         
+        global token
+        if token == 1:
+            self.app_on = tk.IntVar()
+            self.app_off = tk.IntVar(1)
+        else:
+            self.app_on = tk.IntVar(1)
+            self.app_off = tk.IntVar()
 
-        self.app_on = tk.IntVar()
-        self.app_off = tk.IntVar()
-
-        self.label_app = tk.Label(self.frame, text="Application Notifications")
+        self.label_app = tk.Label(self.frame, text="Theme")
         self.label_app.grid(row=4, column=0, columnspan=2)
 
-        self.app_on_check = tk.Checkbutton(self.frame, text="On", variable=self.app_on, onvalue=1, offvalue=0, height=5, width=20)
+        self.app_on_check = tk.Checkbutton(self.frame, text="Light", variable=self.app_on, onvalue=1, offvalue=0, height=5, width=20)
         self.app_on_check.grid(row=5, column=0)
 
-        self.app_off_check = tk.Checkbutton(self.frame, text="Off", variable=self.app_off, onvalue=1, offvalue=0, height=5, width=20)
+        self.app_off_check = tk.Checkbutton(self.frame, text="Dark", variable=self.app_off, onvalue=1, offvalue=0, height=5, width=20)
         self.app_off_check.grid(row=5, column=1)
 
         self.btn_home = tk.Button(self.frame, text="Home")
@@ -246,13 +239,13 @@ class App:
         self.df1.plot(kind='bar', legend=True, ax=self.ax1)
         self.ax1.set_title('Country Vs. GDP Per Capita')
 
-        self.lbl_dur = tk.Label(self.frame, bg="white", borderwidth=2, width=30, height=7, relief="groove")
+        self.lbl_dur = tk.Label(self.frame, bg="white", borderwidth=2, width=30, height=7, relief="groove", fg="black")
         self.lbl_dur.grid(row=1, column=0, padx=20, pady=20)
 
-        self.lbl_status = tk.Label(self.frame, bg="white", borderwidth=2, width=30, height=7, relief="groove")
+        self.lbl_status = tk.Label(self.frame, bg="white", borderwidth=2, width=30, height=7, relief="groove", fg="black")
         self.lbl_status.grid(row=1, column=1, padx=20, pady=20)
 
-        self.lbl_rate = tk.Label(self.frame, bg="white", borderwidth=2, width=30, height=7, relief="groove")
+        self.lbl_rate = tk.Label(self.frame, bg="white", borderwidth=2, width=30, height=7, relief="groove", fg="black")
         self.lbl_rate.grid(row=1, column=2, padx=20, pady=20)
 
         self.btn_settings = tk.Button(self.frame, text="Settings", command = lambda: self.change_color(), width=20, height=3)
@@ -286,23 +279,22 @@ class App:
     #         cv2.imwrite("frame-" + time.strftime("%d-%m-%Y-%H-%M-%S") + ".jpg", cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
 
     def update(self):
-         # Get a frame from the video source
-         global bg_img
-         global counter_min
-         global counter_hrs
-         ret, frame = self.vid.get_frame()
-         cv2.putText(frame,"BLINKING : " + str(counter_min),(10,50), cv2.FONT_HERSHEY_SIMPLEX,
+        # Get a frame from the video source
+        global bg_img, counter_min, counter_hrs, timer_min
+        ret, frame = self.vid.get_frame()
+        cv2.putText(frame,"BLINKING : " + str(counter_min),(10,50), cv2.FONT_HERSHEY_SIMPLEX,
                      2,(255,255,255),2,cv2.LINE_AA)
         
-         if ret:
-             if key == 0:
-                 self.photo = ImageTk.PhotoImage(image = Image.fromarray(frame))
-                 self.canvas.create_image(0, 0, image = self.photo, anchor = tkinter.NW)
-             else:
-                 self.photo = ImageTk.PhotoImage(bg_img)
-                 self.canvas.create_image(300, 200, image = self.photo, anchor = tkinter.CENTER)
+        if ret:
+            if key == 0:
+                self.photo = ImageTk.PhotoImage(image = Image.fromarray(frame))
+                self.canvas.create_image(0, 0, image = self.photo, anchor = tkinter.NW)
+            else:
+                self.photo = ImageTk.PhotoImage(bg_img)
+                self.canvas.create_image(300, 200, image = self.photo, anchor = tkinter.CENTER)
 
-         self.window.after(self.delay, self.update)
+        self.lbl_rate.config(text = timer_min.get_count())
+        self.window.after(self.delay, self.update)
 
     def change_cam(self):
         global key
@@ -319,17 +311,17 @@ class App:
         global token
         if token == 0:
             self.frame.config(bg="#626262")
-            self.lbl_dur.config(bg="#393E46")
-            self.lbl_status.config(bg="#393E46")
-            self.lbl_rate.config(bg="#393E46")
+            self.lbl_dur.config(bg="#393E46", fg="white")
+            self.lbl_status.config(bg="#393E46", fg="white")
+            self.lbl_rate.config(bg="#393E46", fg="white")
             self.canvas1 = GradientFrame(self.frame, "#00F4FF", "#2187FF", width = 1300, height = 100, relief="ridge")
             self.canvas1.grid(row=0, column=0 ,columnspan=4)
             token = 1
         else:
             self.frame.config(bg="white")
-            self.lbl_dur.config(bg="white")
-            self.lbl_status.config(bg="white")
-            self.lbl_rate.config(bg="white")
+            self.lbl_dur.config(bg="white", fg="black")
+            self.lbl_status.config(bg="white", fg="black")
+            self.lbl_rate.config(bg="white", fg="black")
             self.canvas1 = GradientFrame(self.frame, "#00F4FF", "#00F3B9", width = 1300, height = 100, relief="ridge")
             self.canvas1.grid(row=0, column=0 ,columnspan=4)
             token = 0
@@ -337,8 +329,11 @@ class App:
     def on_click_notification(self):
         Notification(tk.Toplevel(), "Notification Settings")
 
+    def on_click_settings(self):
+        Settings(tk.Toplevel(), "Notification Settings")
+
     def toggle_window(self):
-        Minimized(tk.Toplevel(), "Posteye")
+        minim = Minimized(tk.Toplevel(), "Posteye")
         self.window.withdraw()
         
     def show(self):
@@ -377,14 +372,11 @@ class Minimized:
         self.btn_maximize.grid(row=1, column=0)
 
     def toggle_window(self):
-        self.hide()
-        initiate()
-        App(tkinter.Tk(), "POSTEYE")
-        
+        app.show()
+        self.window.iconify()
 
-    def hide(self):
-        self.window.destroy()
-        self.window.update()
+    def showandhide(self):
+        self.window.iconify()
 
 class Timer:
     def __init__(self, start, duration, blink_no):
@@ -396,6 +388,9 @@ class Timer:
 
     def get_records(self):
         return self.records
+
+    def get_count(self):
+        return self.blink_no
 
     def update_blink(self):
         if self.duration == 3600:
@@ -426,17 +421,6 @@ class Timer:
         else:
             return False
 
-one_min = 60
-one_hrs = 3600
-first_execute_min = datetime.now() 
-first_execute_hrs = datetime.now()
-timer_min = Timer(first_execute_min, one_min, counter_min)
-timer_hrs = Timer(first_execute_hrs, one_hrs, counter_hrs)
-my_records = timer_hrs.get_records()
-
-def initiate():
-    cv2.setUseOptimized(True)
-
 class MyVideoCapture:
     def __init__(self, video_source=0):
         # Open the video source
@@ -447,6 +431,9 @@ class MyVideoCapture:
     def get_frame(self):
         global first_execute_min,  first_execute_hrs, one_min, one_hrs
         if self.vid.isOpened():
+            self.vid.set(3, 480)
+            self.vid.set(4, 360)
+            self.vid.set(15, 0.1)
             ret, frame = self.vid.read()
             global detector, counter_min, counter_hrs
             predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
@@ -521,8 +508,13 @@ class MyVideoCapture:
         if self.vid.isOpened():
             self.vid.release()
 
-
-
-initiate()
-App(tkinter.Tk(), "POSTEYE")
+cv2.setUseOptimized(True)
+first_execute_min = datetime.now() 
+first_execute_hrs = datetime.now()
+one_min = 60
+one_hrs = 3600
+timer_min = Timer(first_execute_min, one_min, counter_min)
+timer_hrs = Timer(first_execute_hrs, one_hrs, counter_hrs)
+my_records = timer_hrs.get_records()
+app = App(tkinter.Tk(), "POSTEYE")
 save()
