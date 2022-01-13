@@ -19,6 +19,8 @@ from pandas import DataFrame
 from threading import Thread
 import screen_brightness_control as sbc
 import numpy as np
+import pandas as pd
+from model import binary_relevance
 BLINK_RATIO_THRESHOLD = 5.7
 
 #-----Step 3: Face detection with dlib-----
@@ -33,6 +35,9 @@ theme = "white"
 count = 0
 brightness_val = 0
 counter = 0
+minute = 0
+hour = 0
+url = "Posteye_data.csv"
 #-----Step 4: Detecting Eyes using landmarks in dlib-----
 predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
 #these landmarks are based on the image above 
@@ -244,15 +249,15 @@ class App:
         self.minimize = tk.Button(self.frame, text="Minimize", command=lambda: self.toggle_window())
         self.minimize.grid(row=1, column=3)
 
-        self.figure1 = plt.Figure(figsize=(3,2), dpi=100)
-        self.ax1 = self.figure1.add_subplot(111)
-        self.bar1 = FigureCanvasTkAgg(self.figure1, self.frame)
-        self.bar1.get_tk_widget().grid(row=3, column=3)
+        #self.figure1 = plt.Figure(figsize=(3,2), dpi=100)
+        #self.ax1 = self.figure1.add_subplot(111)
+        #self.bar1 = FigureCanvasTkAgg(self.figure1, self.frame)
+        #self.bar1.get_tk_widget().grid(row=3, column=3)
         #bar1.get_tk_widget().pack()
         #bar1.get_tk_widget().place(x=300, y=700)
-        self.df1 = df1[['Country','GDP_Per_Capita']].groupby('Country').sum()
-        self.df1.plot(kind='bar', legend=True, ax=self.ax1)
-        self.ax1.set_title('Country Vs. GDP Per Capita')
+        #self.df1 = df1[['Country','GDP_Per_Capita']].groupby('Country').sum()
+        #self.df1.plot(kind='bar', legend=True, ax=self.ax1)
+        #self.ax1.set_title('Country Vs. GDP Per Capita')
 
         self.lbl_dur = tk.Label(self.frame, bg="white", borderwidth=2, width=30, height=7, relief="groove", fg="black")
         self.lbl_dur.grid(row=1, column=0, padx=20, pady=20)
@@ -279,9 +284,13 @@ class App:
         # Button that lets the user take a snapshot
         # self.btn_snapshot=tkinter.Button(window, text="Snapshot", width=50, command=self.snapshot)
         # self.btn_snapshot.pack(anchor=tkinter.CENTER, expand=True)
-
+        self.dataset = pd.read_csv(url)
+        self.br = binary_relevance(url, self.dataset)
+        self.X_train, self.X_test, self.y_train, self.y_test = self.br.split_data()
+        
         # After it is called once, the update method will be automatically called every delay milliseconds
         self.delay = 15
+        self.ts = datetime.now()
         self.update()
 
         self.window.mainloop()
@@ -295,7 +304,7 @@ class App:
 
     def update(self):
         # Get a frame from the video source
-        global bg_img, counter_min, counter_hrs, timer_min, brightness_val
+        global bg_img, counter_min, counter_hrs, timer_min, timer_hrs, brightness_val, minute, hour, count, counter
         ret, frame = self.vid.get_frame()
         cv2.putText(frame,"BLINKING : " + str(counter_min),(10,50), cv2.FONT_HERSHEY_SIMPLEX,
                      2,(255,255,255),2,cv2.LINE_AA)
@@ -307,21 +316,57 @@ class App:
             else:
                 self.photo = ImageTk.PhotoImage(bg_img)
                 self.canvas.create_image(300, 200, image = self.photo, anchor = tkinter.CENTER)
-
-        global count, counter
         
         self.lbl_rate.config(text = "{cnt:.2f} blinks/mins".format(cnt = timer_min.get_count()/60))
-        self.lbl_dur.config(text = "{cnt} seconds \n {mnt} minutes \n {hr} hours".format(cnt = count, mnt = count // 60, hr = count // 3600))
+        self.lbl_dur.config(text = "{cnt} seconds \n {mnt} minutes \n {hr} hours".format(cnt = count, mnt = minute, hr = hour))
         self.window.after(self.delay, self.update)
 
         count = count + 1
+        now = datetime.now()
+        diff = now - self.ts
+        diff_in_s = int(diff.total_seconds())
 
+        count = diff_in_s % 60
+        minute = diff_in_s // 60
+        hour = diff_in_s // 3600
+
+        if timer_min.is_minute():
+            counter_min = 0
+        elif timer_hrs.is_hour():
+            counter_hrs = 0
+            
+        #if count == 60:
+        #    minute = minute + 1
+        #    count = 0
+        #    counter_min = 0
+        #elif minute == 60:
+        #    hour = hour + 1
+        #    minute = 0
+        #    counter_hrs = 0
+            
         if counter%5 ==0:
             if brightness_val > 100:
-                sbc.set_brightness(60, display = 0)
+                sbc.set_brightness(50, display = 0)
             else:
-                sbc.set_brightness(70, display=0)
+                sbc.set_brightness(65, display=0)
         counter = counter + 1
+
+        if(timer_min.is_minute):
+            rate = timer_min.get_prev_blink()
+            pred = self.br.predict(np.array(rate).reshape(-1,1))
+            text = ''
+            if minute >= 1:
+                if(pred[0][0] == 1 and pred[0][1] == 1):
+                    text = "Asleep or Tired"
+                elif(pred[0][0] == 1 and pred[0][1] == 0):
+                    text = "Tired"
+                elif(pred[0][0] == 0 and pred[0][1] == 1):
+                    text = "Sleepy"
+                elif(pred[0][0] == 0 and pred[0][1] == 0):
+                    text = "Normal"
+            else:
+                text = "Wait for the 1st one minute"
+            self.lbl_status.config(text = text)
         #print(str(sbc.get_brightness()))
 
 
@@ -412,6 +457,7 @@ class Timer:
         self.start = start
         self.duration = duration #in seconds
         self.blink_no = blink_no
+        self.prev_blink = 0
         self.records = []
         self.cur_time = datetime.now()
 
@@ -421,6 +467,15 @@ class Timer:
     def get_count(self):
         return self.blink_no
 
+    def get_timer(self):
+        return self.cur_time
+
+    def get_prev_blink(self):
+        return self.prev_blink
+
+    def set_timer(self, time):
+        self.cur_time = time
+
     def update_blink(self):
         if self.duration == 3600:
             if (self.cur_time) >= (self.start + timedelta(seconds=self.duration)):
@@ -428,12 +483,21 @@ class Timer:
                 no_blink = str(self.blink_no)
                 insert = now + ' ' + no_blink
                 self.records.append(insert)
+                self.prev_blink = self.blink_no
                 self.blink_no = 0
+                self.start = datetime.now()
+                return 0
             else:
                 self.blink_no += 1
         else:
-            if (self.cur_time) >= (self.start + timedelta(seconds=self.duration)):
+            print((self.cur_time) >= (self.start + timedelta(seconds=60)))
+            print(self.cur_time)
+            print(self.start + timedelta(seconds=60))
+            if (self.cur_time) >= (self.start + timedelta(seconds=60)):
+                self.prev_blink = self.blink_no
                 self.blink_no = 0
+                self.start = datetime.now()
+                return 0
             else:
                 self.blink_no += 1
         return self.blink_no
@@ -487,8 +551,13 @@ class MyVideoCapture:
                 right_eye_ratio = self.get_blink_ratio(right_eye_landmarks, landmarks)
                 blink_ratio     = (left_eye_ratio + right_eye_ratio) / 2
 
-                first_execute_min = datetime.now() if timer_min.is_minute() else first_execute_min 
-                first_execute_hrs = datetime.now() if timer_hrs.is_hour() else first_execute_hrs
+                if not timer_min.is_minute():
+                    timer_min.set_timer(datetime.now())
+                if not timer_hrs.is_hour():
+                    timer_hrs.set_timer(datetime.now())
+                
+                #first_execute_min = datetime.now() if timer_min.is_minute() else first_execute_min 
+                #first_execute_hrs = datetime.now() if timer_hrs.is_hour() else first_execute_hrs
 
                 if blink_ratio > BLINK_RATIO_THRESHOLD:
                     #Blink detected! Do Something!
