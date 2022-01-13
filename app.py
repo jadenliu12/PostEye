@@ -23,7 +23,6 @@ import pandas as pd
 from model import binary_relevance
 BLINK_RATIO_THRESHOLD = 5.7
 
-#-----Step 3: Face detection with dlib-----
 detector = dlib.get_frontal_face_detector()
 counter_min = 0
 counter_hrs = 0
@@ -38,30 +37,25 @@ counter = 0
 minute = 0
 hour = 0
 url = "Posteye_data.csv"
-#-----Step 4: Detecting Eyes using landmarks in dlib-----
-predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
-#these landmarks are based on the image above 
-left_eye_landmarks  = [36, 37, 38, 39, 40, 41]
-right_eye_landmarks = [42, 43, 44, 45, 46, 47]
 
-###############################DUMMY DATA############################################
-data1 = {'Country': ['US','CA','GER','UK','FR'],
-         'GDP_Per_Capita': [45000,42000,52000,49000,47000]
-        }
-df1 = DataFrame(data1,columns=['Country','GDP_Per_Capita'])
+# ###############################DUMMY DATA############################################
+# data1 = {'Country': ['US','CA','GER','UK','FR'],
+#          'GDP_Per_Capita': [45000,42000,52000,49000,47000]
+#         }
+# df1 = DataFrame(data1,columns=['Country','GDP_Per_Capita'])
 
 
-data2 = {'Year': [1920,1930,1940,1950,1960,1970,1980,1990,2000,2010],
-         'Unemployment_Rate': [9.8,12,8,7.2,6.9,7,6.5,6.2,5.5,6.3]
-        }
-df2 = DataFrame(data2,columns=['Year','Unemployment_Rate'])
+# data2 = {'Year': [1920,1930,1940,1950,1960,1970,1980,1990,2000,2010],
+#          'Unemployment_Rate': [9.8,12,8,7.2,6.9,7,6.5,6.2,5.5,6.3]
+#         }
+# df2 = DataFrame(data2,columns=['Year','Unemployment_Rate'])
 
 
-data3 = {'Interest_Rate': [5,5.5,6,5.5,5.25,6.5,7,8,7.5,8.5],
-         'Stock_Index_Price': [1500,1520,1525,1523,1515,1540,1545,1560,1555,1565]
-        }  
-df3 = DataFrame(data3,columns=['Interest_Rate','Stock_Index_Price'])
-#####################################################################################
+# data3 = {'Interest_Rate': [5,5.5,6,5.5,5.25,6.5,7,8,7.5,8.5],
+#          'Stock_Index_Price': [1500,1520,1525,1523,1515,1540,1545,1560,1555,1565]
+#         }  
+# df3 = DataFrame(data3,columns=['Interest_Rate','Stock_Index_Price'])
+# #####################################################################################
 
 def save():
     global my_records
@@ -138,7 +132,6 @@ class Notification:
         self.sleep_off_check = tk.Checkbutton(self.frame, text="Off", variable=self.sleep_off, onvalue=1, offvalue=0, height=5, width=20)
         self.sleep_off_check.grid(row=3, column=1)
         
-
         self.app_on = tk.IntVar()
         self.app_off = tk.IntVar()
 
@@ -173,7 +166,6 @@ class Settings:
 
         self.alarm_off_check = tk.Checkbutton(self.frame, text="Off", variable=self.alarm_off, onvalue=1, offvalue=0, height=5, width=20)
         self.alarm_off_check.grid(row=1, column=1)
-
 
         self.sleep_on = tk.IntVar(value = 1)
         self.sleep_off = tk.IntVar()
@@ -229,10 +221,8 @@ class App:
         self.canvas1.grid(row=0, column=0 ,columnspan=4)
 
         self.video_source = video_source
-        #open video source (by default this will try to open the computer webcam)
         self.vid = MyVideoCapture(self.video_source)
 
-        #Create a canvas that can fit the above video source size
         self.canvas = tkinter.Canvas(self.frame, width = 600, height = 400)
         self.canvas.grid(row=2, column=0, columnspan=3, rowspan = 3)
 
@@ -280,30 +270,17 @@ class App:
         self.btn_data = tk.Button(self.frame, text="Get Data", command = lambda: self.selected_date(), width=20, height=3)
         self.btn_data.grid(row=5, column=3, pady = 20)
 
-
-        # Button that lets the user take a snapshot
-        # self.btn_snapshot=tkinter.Button(window, text="Snapshot", width=50, command=self.snapshot)
-        # self.btn_snapshot.pack(anchor=tkinter.CENTER, expand=True)
         self.dataset = pd.read_csv(url)
         self.br = binary_relevance(url, self.dataset)
         self.X_train, self.X_test, self.y_train, self.y_test = self.br.split_data()
         
-        # After it is called once, the update method will be automatically called every delay milliseconds
         self.delay = 15
         self.ts = datetime.now()
         self.update()
 
         self.window.mainloop()
 
-    # def snapshot(self):
-    #     # Get a frame from the video source
-    #     ret, frame = self.vid.get_frame()
-
-    #     if ret:
-    #         cv2.imwrite("frame-" + time.strftime("%d-%m-%Y-%H-%M-%S") + ".jpg", cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
-
     def update(self):
-        # Get a frame from the video source
         global bg_img, counter_min, counter_hrs, timer_min, timer_hrs, brightness_val, minute, hour, count, counter
         ret, frame = self.vid.get_frame()
         cv2.putText(frame,"BLINKING : " + str(counter_min),(10,50), cv2.FONT_HERSHEY_SIMPLEX,
@@ -334,16 +311,7 @@ class App:
             counter_min = 0
         elif timer_hrs.is_hour():
             counter_hrs = 0
-            
-        #if count == 60:
-        #    minute = minute + 1
-        #    count = 0
-        #    counter_min = 0
-        #elif minute == 60:
-        #    hour = hour + 1
-        #    minute = 0
-        #    counter_hrs = 0
-            
+                        
         if counter%5 ==0:
             if brightness_val > 100:
                 sbc.set_brightness(50, display = 0)
@@ -367,8 +335,6 @@ class App:
             else:
                 text = "Wait for the 1st one minute"
             self.lbl_status.config(text = text)
-        #print(str(sbc.get_brightness()))
-
 
     def change_cam(self):
         global key
@@ -379,7 +345,6 @@ class App:
             
     def selected_date(self):
         print("Selected Date is: " + self.cal.get_date())
-        # date.config(text="Selected Date is: " + self.cal.get_date())
 
     def change_color(self):
         global token
@@ -530,23 +495,17 @@ class MyVideoCapture:
             ret, frame = self.vid.read()
             global detector, counter_min, counter_hrs
             predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
-            #these landmarks are based on the image above 
             left_eye_landmarks  = [36, 37, 38, 39, 40, 41]
             right_eye_landmarks = [42, 43, 44, 45, 46, 47]
 
-            #-----Step 2: converting image to grayscale-----
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-            #-----Step 3: Face detection with dlib-----
-            #detecting faces in the frame 
             faces,_,_ = detector.run(image = gray, upsample_num_times = 0, adjust_threshold = 0.0)
 
-            #-----Step 4: Detecting Eyes using landmarks in dlib-----
             for face in faces:
                 
                 landmarks = predictor(gray, face)
 
-                #-----Step 5: Calculating blink ratio for one eye-----
                 left_eye_ratio  = self.get_blink_ratio(left_eye_landmarks, landmarks)
                 right_eye_ratio = self.get_blink_ratio(right_eye_landmarks, landmarks)
                 blink_ratio     = (left_eye_ratio + right_eye_ratio) / 2
@@ -556,26 +515,17 @@ class MyVideoCapture:
                 if not timer_hrs.is_hour():
                     timer_hrs.set_timer(datetime.now())
                 
-                #first_execute_min = datetime.now() if timer_min.is_minute() else first_execute_min 
-                #first_execute_hrs = datetime.now() if timer_hrs.is_hour() else first_execute_hrs
-
                 if blink_ratio > BLINK_RATIO_THRESHOLD:
-                    #Blink detected! Do Something!
                     counter_min = timer_min.update_blink()
                     counter_hrs = timer_hrs.update_blink()
 
-            #cv2.imshow('BlinkDetector', frame)
             ret, frame = self.vid.read()
             global brightness_val
             brightness_val = brightness(frame)
             if ret:
-                # Return a boolean success flag and the current frame converted to BGR
                 return (ret, cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
             else:
                 return (ret, None)
-            
-        # else:
-        #     return (ret, None)
 
     def midpoint(self, point1 ,point2):
         return (point1.x + point2.x)/2,(point1.y + point2.y)/2
@@ -584,8 +534,6 @@ class MyVideoCapture:
         return math.sqrt((point1[0] - point2[0])**2 + (point1[1] - point2[1])**2)
 
     def get_blink_ratio(self, eye_points, facial_landmarks):
-        
-        #loading all the required points
         corner_left  = (facial_landmarks.part(eye_points[0]).x, 
                         facial_landmarks.part(eye_points[0]).y)
         corner_right = (facial_landmarks.part(eye_points[3]).x, 
@@ -596,7 +544,6 @@ class MyVideoCapture:
         center_bottom = self.midpoint(facial_landmarks.part(eye_points[5]), 
                                  facial_landmarks.part(eye_points[4]))
 
-        #calculating distance
         horizontal_length = self.euclidean_distance(corner_left,corner_right)
         vertical_length = self.euclidean_distance(center_top,center_bottom)
 
@@ -604,7 +551,6 @@ class MyVideoCapture:
 
         return ratio
     
-     # Release the video source when the object is destroyed
     def __del__(self):
         if self.vid.isOpened():
             self.vid.release()
