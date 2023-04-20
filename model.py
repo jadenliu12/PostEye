@@ -1,14 +1,7 @@
 import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
-import skmultilearn
 from sklearn.model_selection import train_test_split
 # ML Pkgs
-from sklearn.linear_model import LogisticRegression
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.naive_bayes import GaussianNB,MultinomialNB
-from sklearn.metrics import accuracy_score,hamming_loss,classification_report
+from sklearn.naive_bayes import GaussianNB
 from skmultilearn.problem_transform import BinaryRelevance
 # Multi Label Pkgs
 
@@ -34,10 +27,5 @@ class binary_relevance:
         
     def predict(self,input):
         br_prediction = self.model.predict(input)
-        # print(br_prediction.toarray())
-        # print(accuracy_score(y_test,br_prediction))
-        # print(hamming_loss(y_test,br_prediction))
         return br_prediction.toarray()
-
-
-# print(br.predict(np.array(11).reshape(-1,1)))
+    

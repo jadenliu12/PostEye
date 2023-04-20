@@ -1,61 +1,39 @@
 import tkinter as tk
-from tkinter import messagebox
-from tkinter import ttk
-from datetime import date
-from tkcalendar import Calendar
 import tkinter
+from tkcalendar import Calendar
 import cv2
 import dlib
-import math
 from PIL import Image, ImageTk
-import time
-from datetime import datetime
-from imutils import face_utils
 from numpy.linalg import norm
-from datetime import timedelta
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from pandas import DataFrame
-from threading import Thread
 import screen_brightness_control as sbc
+
+from datetime import date, datetime, timedelta
+import math
 import numpy as np
 import pandas as pd
-from model import binary_relevance
-BLINK_RATIO_THRESHOLD = 5.7
 
+from model import binary_relevance
+
+# Initiate detector
 detector = dlib.get_frontal_face_detector()
+
+# Hyper Variables
+BLINK_RATIO_THRESHOLD = 5.7
 counter_min = 0
 counter_hrs = 0
 key = 0
 toggle = 0
 token = 0
-bg_img = Image.open("./eye.png")
 theme = "white"
 count = 0
 brightness_val = 0
 counter = 0
 minute = 0
 hour = 0
-url = "Posteye_data.csv"
 
-# ###############################DUMMY DATA############################################
-# data1 = {'Country': ['US','CA','GER','UK','FR'],
-#          'GDP_Per_Capita': [45000,42000,52000,49000,47000]
-#         }
-# df1 = DataFrame(data1,columns=['Country','GDP_Per_Capita'])
-
-
-# data2 = {'Year': [1920,1930,1940,1950,1960,1970,1980,1990,2000,2010],
-#          'Unemployment_Rate': [9.8,12,8,7.2,6.9,7,6.5,6.2,5.5,6.3]
-#         }
-# df2 = DataFrame(data2,columns=['Year','Unemployment_Rate'])
-
-
-# data3 = {'Interest_Rate': [5,5.5,6,5.5,5.25,6.5,7,8,7.5,8.5],
-#          'Stock_Index_Price': [1500,1520,1525,1523,1515,1540,1545,1560,1555,1565]
-#         }  
-# df3 = DataFrame(data3,columns=['Interest_Rate','Stock_Index_Price'])
-# #####################################################################################
+# Load Assets
+bg_img = Image.open("./assets/eye.png")
+url = "./data/Posteye_data.csv"
 
 def save():
     global my_records
@@ -386,7 +364,7 @@ class Minimized:
         self.window.geometry('364x150+100+69')
         self.window.resizable(0, 0)
         self.window.resizable(False, False)
-        self.window.iconbitmap('./eye_icon.ico')
+        self.window.iconbitmap('./assets/eye_icon.ico')
         
         self.frame = tk.Frame(self.window, width=364, height=150, bg= "#626262")
         self.frame.grid(row=0, column=0)
@@ -494,7 +472,7 @@ class MyVideoCapture:
             self.vid.set(15, 0.1)
             ret, frame = self.vid.read()
             global detector, counter_min, counter_hrs
-            predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
+            predictor = dlib.shape_predictor("./data/shape_predictor_68_face_landmarks.dat")
             left_eye_landmarks  = [36, 37, 38, 39, 40, 41]
             right_eye_landmarks = [42, 43, 44, 45, 46, 47]
 
